@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         hideSystemUI()
+        camera_view.setOnClickListener { hideSystemUI() }
         val fab: View = findViewById(R.id.fab)
         fab.setOnTouchListener(object : OnTouchListener {
             var dX = 0f
