@@ -1,13 +1,20 @@
 package com.usk.videoscreenrecord
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.DisplayMetrics
+import android.util.Log
+import android.view.MotionEvent
 import android.view.View
+import android.view.View.OnTouchListener
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import kotlinx.android.synthetic.main.activity_main.*
+
 
 class MainActivity : AppCompatActivity() {
     val TAG = MainActivity::class.java.simpleName
@@ -20,9 +27,48 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         hideSystemUI()
         val fab: View = findViewById(R.id.fab)
-        fab.setOnClickListener { view ->
-            camera_view.toggleCamera()
-        }
+        fab.setOnTouchListener(object : OnTouchListener {
+            var dX = 0f
+            var dY = 0f
+            var startX = 0f
+            var startY = 0f
+            var lastAction = 0
+            var screenWidth = getScreenWidth(this@MainActivity)
+            var screenHeight = getScreenHeight(this@MainActivity)
+
+            override fun onTouch(v: View, event: MotionEvent): Boolean {
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        dX = v.x - event.rawX
+                        dY = v.y - event.rawY
+                        startX = event.rawX
+                        startY = event.rawY
+                        lastAction = MotionEvent.ACTION_DOWN
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        val newY = event.rawY + dY
+                        val newX = event.rawX + dX
+                        v.y = when {
+                            newY > screenHeight.toFloat() - v.height  -> screenHeight.toFloat() - v.height
+                            newY < 0 -> 0f
+                            else -> newY
+                        }
+                        v.x = when {
+                            newX > screenWidth.toFloat() - v.width -> screenWidth.toFloat()- v.width
+                            newX < 0 -> 0f
+                            else -> newX
+                        }
+                        lastAction = MotionEvent.ACTION_MOVE
+                        Log.d("uday", "v.y: ${v.y}  v.x : ${v.x } screenHeight: $screenHeight screenWidth: $screenWidth v.height: ${v.height} v.width: ${v.width}")
+                    }
+                    MotionEvent.ACTION_UP -> if (Math.abs(startX - event.rawX) < 10 && Math.abs(startY - event.rawY) < 10) {
+                        camera_view.toggleCamera()
+                    }
+                    else -> return false
+                }
+                return true
+            }
+        })
 
         if (checkPermissions()) onPermissionGranted() else requestPermissions()
 
@@ -92,5 +138,16 @@ class MainActivity : AppCompatActivity() {
                 // Hide the nav bar and status bar
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 or View.SYSTEM_UI_FLAG_FULLSCREEN)
+    }
+    fun getScreenWidth(activity: Activity): Int {
+        val displayMetrics = DisplayMetrics()
+        activity.windowManager.defaultDisplay.getMetrics(displayMetrics)
+        return displayMetrics.widthPixels
+    }
+
+    fun getScreenHeight(activity: Activity): Int {
+        val displayMetrics = DisplayMetrics()
+        activity.windowManager.defaultDisplay.getMetrics(displayMetrics)
+        return displayMetrics.heightPixels
     }
 }
